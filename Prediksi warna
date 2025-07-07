@@ -1,1 +1,58 @@
+import streamlit as st
+import random
 
+# Prediksi 4D Otomatis dengan pewarnaan angka
+def generate_predictions(last3, target=None, n=5):
+    # Hitung frekuensi kemunculan tiap digit
+    freq = {}
+    for num in last3:
+        for d in num:
+            freq[d] = freq.get(d, 0) + 1
+    # Tentukan kategori angka
+    all_digits = set('0123456789')
+    sering = {d for d, f in freq.items() if f >= 2}
+    jarang = all_digits - set(freq.keys())
+    # Hasil prediksi
+    preds = []
+    for _ in range(n):
+        if target:
+            # Fokus angka depan dari target
+           (prefix, suffix) = (target[:2], target[2:])
+            # Acak suffix dari angka sering/jarang
+            combo = ''.join(random.choices(tuple(sering), k=1) + 
+                             random.choices(tuple(jarang), k=1))
+            num = prefix + combo
+        else:
+            # Full random antara sering & jarang
+            part = ''.join(random.choices(tuple(jarang), k=2) +
+                           random.choices(tuple(sering), k=2))
+            num = part
+        # Tandai warna
+        colored = []
+        for ch in num:
+            color = '🔵' if ch in jarang else '🔴'
+            colored.append(f"{ch}{color}")
+        preds.append((''.join(colored), num))
+    return preds, sering, jarang
+
+# Streamlit UI
+st.title("🔮 Prediksi 4D Otomatis ke Target")
+
+# Input
+last3 = st.text_input("Masukkan 3 result terakhir (pisahkan koma, ex: 2438,9258,4500)")
+target = st.text_input("Target 4D (opsional, ex: 1784)")
+n = st.slider("Jumlah prediksi yang dihasilkan", 1, 10, 5)
+
+# Proses & Output
+if st.button("Generate Prediksi"):
+    parts = [s.strip() for s in last3.split(',') if s.strip()]
+    if len(parts) != 3 or any(len(s)!=4 or not s.isdigit() for s in parts):
+        st.error("Masukkan harus 3 angka 4D, dipisah koma (contoh: 2438,9258,4500)")
+    else:
+        preds, sering, jarang = generate_predictions(parts, target or None, n)
+        st.write(f"**Angka sering muncul:** {', '.join(sorted(sering))}")
+        st.write(f"**Angka jarang muncul:** {', '.join(sorted(jarang))}")
+        st.markdown("---")
+        st.write("#### Hasil Prediksi:")
+        for colored, raw in preds:
+            st.markdown(f"- {colored}  ➤  `{raw}`")
